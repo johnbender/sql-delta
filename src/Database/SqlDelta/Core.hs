@@ -70,7 +70,3 @@ diffAttributes old new diffs =
     (toList $ difference (fromList old) (fromList new)) ++ diffs
 
 attrs (CreateTable _ _ as _) = as
-
-tableName (CreateTable _ n _ _) = (map (\(Nmc s) -> s) (nameComponents n))
-
-attrName (AttributeDef _ (Nmc s) _ _ _) = s
