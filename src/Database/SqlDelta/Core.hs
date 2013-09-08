@@ -39,8 +39,7 @@ instance Ord Statement where
         compare (shown fst) (shown snd)
 
 instance Ord AttributeDef where
-    compare fst@(AttributeDef _ _ _ _ _) snd@(AttributeDef _ _ _ _ _) =
-        compare (shown fst) (shown snd)
+    compare fst snd = compare (shown fst) (shown snd)
 
 instance Diff AttributeDef
 instance Diff Statement
