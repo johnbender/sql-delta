@@ -1,48 +1,14 @@
 module Database.SqlDelta.Core (reconcile) where
 
-import Database.HsSqlPpp.Ast (Statement(CreateTable),
-                              AttributeDef(..),
-                              NameComponent(..),
-                              nameComponents)
+import Database.SqlDelta.Ast (Statement(..),
+                              (<=>),
+                              defaultParseFlags,
+                              parseStatements)
 
-import Database.HsSqlPpp.Parser (parseStatements, defaultParseFlags)
-import Database.HsSqlPpp.Catalog ()
 import Data.Either (rights)
-import Data.Text.Lazy (pack)
-import Data.List (zip, foldl')
 import Data.Set (difference, fromList, toList)
+import Data.Text.Lazy (pack)
 import Text.Show.Pretty (ppShow)
-import Debug.Trace (trace)
-
-class (Ord a) => Diff a where
-    -- check for a difference
-    (<=>) :: a -> a -> Bool
-    (<=>) x y = EQ == (compare x y)
-
-    (</=>) :: a -> a -> Bool
-    (</=>) x y = not (x <=> y)
-
--- replacement for derived show instances, inteded to exclude anotation info
-class (Show a) => Shown a where
-    shown :: a -> String
-    shown = show
-
-instance Shown Statement where
-    shown (CreateTable _ x attrs z) =
-        foldl' (\acc x -> acc ++ (shown x) ++ " ") "" attrs
-
-instance Shown AttributeDef where
-    shown (AttributeDef _ (Nmc name) _ _ _)  = name
-
-instance Ord Statement where
-    compare fst@(CreateTable _ _ _ _) snd@(CreateTable _ _ _ _) =
-        compare (shown fst) (shown snd)
-
-instance Ord AttributeDef where
-    compare fst snd = compare (shown fst) (shown snd)
-
-instance Diff AttributeDef
-instance Diff Statement
 
 reconcile old new = do
   oldSql <- readFile old
@@ -57,13 +23,13 @@ parse path sql =
          _       -> []
 
 diff old new | old <=> new = []
-             | otherwise    = diff' old new []
+             | otherwise   = diffStatement old new []
 
 -- TODO handle constraints
-diff' old@(CreateTable _ _ _ _) new@(CreateTable _ _ _ _) diffs =
+diffStatement old@(CreateTable _ _ _ _) new@(CreateTable _ _ _ _) diffs =
     diffAttributes (attrs old) (attrs new) diffs
 
-diff' (CreateTable _ _ as _) x diffs = as ++ diffs
+diffStatement (CreateTable _ _ as _) x diffs = as ++ diffs
 
 diffAttributes old new diffs =
     (toList $ difference (fromList old) (fromList new)) ++ diffs
