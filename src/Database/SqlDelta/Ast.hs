@@ -6,7 +6,8 @@ module Database.SqlDelta.Ast (AttributeDef(..),
                               Substatement(..),
                               (<=>),
                               defaultParseFlags,
-                              parseStatements) where
+                              parseStatements,
+                              toSubs) where
 
 import Database.HsSqlPpp.Ast (AttributeDef(..),
                               Constraint(..),
@@ -23,6 +24,9 @@ import Database.HsSqlPpp.Parser (parseStatements, defaultParseFlags)
 import Data.List (foldl')
 
 data Substatement = forall a . (Shown a, Eq a, Ord a) => Substatement a
+
+toSubs :: (Shown a, Eq a, Ord a) => [a] -> [Substatement]
+toSubs = map Substatement
 
 -- not sure why it's name RowConstraint in hssqlppp
 type ColumnConstraint = RowConstraint

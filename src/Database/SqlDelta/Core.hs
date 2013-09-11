@@ -4,7 +4,8 @@ import Database.SqlDelta.Ast (AttributeDef(..),
                               Statement(..),
                               Substatement(..),
                               defaultParseFlags,
-                              parseStatements)
+                              parseStatements,
+                              toSubs)
 
 import Database.SqlDelta.Util (symmetricDiffSet, symmetricDiffList)
 
@@ -37,13 +38,15 @@ diff old new =
 -- TODO abstract the "Statement" in `diffStatement` using quantified wrapper
 --      most likely part of the Diff typeclass as `<>` and implemented for
 --      the relevant ast types
-diffStatement old@(CreateTable _ _ oldAttrs _) new@(CreateTable _ _ newAttrs _) =
-  let oldSubs = map Substatement oldAttrs
-      newSubs = map Substatement newAttrs
-      constraintDiff = symmetricDiffList (constraints old) (constraints new)
-  in constraintDiff
-     : (symmetricDiffList oldSubs newSubs)
-     : (diffAttrs oldAttrs newAttrs)
+diffStatement (CreateTable _ _ oldAttrs oldCstr) (CreateTable _ _ newAttrs newCstr) =
+  -- diff the table constrains
+  (symmetricDiffList (toSubs oldCstr) (toSubs newCstr))
+
+  -- diff the attributes to get the old and the new
+  : (symmetricDiffList (toSubs oldAttrs) (toSubs newAttrs))
+
+  -- diff the contraints and other parts of the attributes
+  : (diffAttrs oldAttrs newAttrs)
 
 diffAttrs :: [AttributeDef] -> [AttributeDef] -> [(Set Substatement, Set Substatement)]
 diffAttrs old new =
