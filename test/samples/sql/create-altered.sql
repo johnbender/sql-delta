@@ -1,1 +1,5 @@
-CREATE TABLE foo ( bar text, baz text );
+CREATE TABLE foo (
+  bar text,
+	baz numeric,
+	bak numeric
+);
