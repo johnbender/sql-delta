@@ -7,7 +7,7 @@ import Database.SqlDelta.Ast (AttributeDef(..),
                               parseStatements,
                               toSubs)
 
-import Database.SqlDelta.Util (symmetricDiffSet, symmetricDiffList)
+import Database.SqlDelta.Util (symmetricDiff)
 
 import Data.Either (rights)
 import Data.Set as Set (Set(..), (\\), fromList, toAscList, null)
@@ -30,9 +30,9 @@ parse path sql =
 diff old new =
   -- get the items only in the old and only in the new for removal/addition
   -- get the matching items and diff them
-  let (onlyOld, onlyNew) = symmetricDiffList old new
-      matchOld = toAscList $ (fromList old) \\ onlyOld
-      matchNew = toAscList $ (fromList new) \\ onlyNew
+  let (onlyOld, onlyNew) = symmetricDiff old new
+      (matchOld, _) = symmetricDiff old onlyOld
+      (matchNew, _) = symmetricDiff new onlyNew
   in concat $ zipWith diffStatement matchOld matchNew
 
 -- TODO abstract the "Statement" in `diffStatement` using quantified wrapper
@@ -40,19 +40,19 @@ diff old new =
 --      the relevant ast types
 diffStatement (CreateTable _ _ oldAttrs oldCstr) (CreateTable _ _ newAttrs newCstr) =
   -- diff the table constrains
-  (symmetricDiffList (toSubs oldCstr) (toSubs newCstr))
+  (symmetricDiff (toSubs oldCstr) (toSubs newCstr))
 
   -- diff the attributes to get the old and the new
-  : (symmetricDiffList (toSubs oldAttrs) (toSubs newAttrs))
+  : (symmetricDiff (toSubs oldAttrs) (toSubs newAttrs))
 
   -- diff the contraints and other parts of the attributes
   : (diffAttrs oldAttrs newAttrs)
 
-diffAttrs :: [AttributeDef] -> [AttributeDef] -> [(Set Substatement, Set Substatement)]
+diffAttrs :: [AttributeDef] -> [AttributeDef] -> [([Substatement], [Substatement])]
 diffAttrs old new =
   let oldConstraints =  sort $ map colConstraints old
       newConstraints = sort $ map colConstraints new
-  in zipWith (\a b -> symmetricDiffList a b ) oldConstraints newConstraints
+  in zipWith (\a b -> symmetricDiff a b ) oldConstraints newConstraints
 
 constraints (CreateTable _ _ _ cs) =  map Substatement cs
 colConstraints (AttributeDef _ _ _ _ cs) = map Substatement cs

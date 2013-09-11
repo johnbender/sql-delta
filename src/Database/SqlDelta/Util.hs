@@ -1,17 +1,11 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Database.SqlDelta.Util (symmetricDiffList, symmetricDiffSet ) where
+module Database.SqlDelta.Util (symmetricDiff ) where
 
-import Data.Set as Set (Set, (\\), fromList)
+import Data.Set as Set (Set, (\\), fromList, toAscList)
 
-symmetricDiff :: (Ord b) => (a b -> Set b) -> a b -> a b -> (Set b, Set b)
-symmetricDiff toSet old new =
-  let oldSet = toSet old
-      newSet = toSet new
-  in (oldSet \\ newSet, newSet \\ oldSet)
-
-symmetricDiffSet :: (Ord b) => Set b -> Set b -> (Set b, Set b)
-symmetricDiffSet = symmetricDiff id
-
-symmetricDiffList :: (Ord b) => [b] -> [b] -> (Set b, Set b)
-symmetricDiffList = symmetricDiff fromList
+symmetricDiff :: (Ord b) => [b] -> [b] -> ([b], [b])
+symmetricDiff old new =
+  let oldSet = fromList old
+      newSet = fromList new
+  in (toAscList $ oldSet \\ newSet, toAscList $ newSet \\ oldSet)
